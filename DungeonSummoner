@@ -5,7 +5,7 @@ local dungeons = {
     {name = "DHT_BRH", zoneIDs = {641}, differentiateByCoordinates = true},
     {name = "TOTT", zoneIDs = {204, 322}},
     {name = "AD", zoneIDs = {862, 934}},
-    {name = "WM", zoneIDs = {9, 10}},
+    {name = "WM", zoneIDs = {896, 1015}},
     {name = "EB", zoneIDs = {543, 620}}
 }
 
@@ -67,7 +67,7 @@ local function PrintGroupMembersZoneIDsAndSummonNeeds()
         
         for i = 1, numMembers do
             local unitID = "party" .. i
-            local memberName = GetUnitName(unitID, false)
+            local memberName = GetUnitName(unitID, true)
             local zoneID = C_Map.GetBestMapForUnit(unitID)
             local needsSummon = true
             
