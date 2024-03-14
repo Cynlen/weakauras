@@ -1,4 +1,4 @@
-print("|cff7155B3Initializing summon checker...|r")
+print("|cff7155B3Initializing Dungeon Summoner WeakAura...|r")
 
 -- Table mapping dungeon names to their zone IDs and additional differentiation logic if needed
 local dungeons = {
@@ -6,7 +6,7 @@ local dungeons = {
     -- DHT and BRH share the same zoneID but will be differentiated by GPS coordinates
     {name = "DHT_BRH", zoneIDs = {641}, differentiateByCoordinates = true},
     {name = "TOTT", zoneIDs = {204, 322}}, 
-    {name = "AD", zoneIDs = {7, 8}}, 
+    {name = "AD", zoneIDs = {862, 934}}, 
     {name = "WM", zoneIDs = {9, 10}}, 
     {name = "EB", zoneIDs = {543, 620}} 
     -- Add more dungeons as needed
@@ -54,6 +54,7 @@ end
 
 local function PrintGroupMembersZoneIDsAndSummonNeeds()
     local playerZoneID = C_Map.GetBestMapForUnit("player")
+    print(playerZoneID)
     if not playerZoneID then
         print("Your zone ID could not be determined.")
         return
