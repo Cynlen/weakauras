@@ -1,15 +1,12 @@
 print("|cff7155B3Initializing Dungeon Summoner WeakAura...|r")
 
--- Table mapping dungeon names to their zone IDs and additional differentiation logic if needed
 local dungeons = {
     {name = "DOTI", zoneIDs = {2025, 2190}},
-    -- DHT and BRH share the same zoneID but will be differentiated by GPS coordinates
     {name = "DHT_BRH", zoneIDs = {641}, differentiateByCoordinates = true},
-    {name = "TOTT", zoneIDs = {204, 322}}, 
-    {name = "AD", zoneIDs = {862, 934}}, 
-    {name = "WM", zoneIDs = {9, 10}}, 
-    {name = "EB", zoneIDs = {543, 620}} 
-    -- Add more dungeons as needed
+    {name = "TOTT", zoneIDs = {204, 322}},
+    {name = "AD", zoneIDs = {862, 934}},
+    {name = "WM", zoneIDs = {9, 10}},
+    {name = "EB", zoneIDs = {543, 620}}
 }
 
 local function getPlayerGPS()
@@ -26,24 +23,23 @@ local function getPlayerGPS()
 end
 
 local function isUserInDungeonZone(userZoneID)
-    local x, y = getPlayerGPS()  -- Get GPS coordinates for additional logic if needed
+    local x, y = getPlayerGPS()
     
     for _, dungeon in ipairs(dungeons) do
         for _, zoneID in ipairs(dungeon.zoneIDs) do
             if userZoneID == zoneID then
-                -- Additional check for dungeons that need differentiation by GPS coordinates
                 if dungeon.differentiateByCoordinates and dungeon.name == "DHT_BRH" then
                     if x then
-                        if x < 0.50 then  -- Using 0.50 as it's the fraction representation of 50%
-                            return true, "BRH"
+                        if x < 0.50 then
+                            return true, "BRH", dungeon.zoneIDs
                         else
-                            return true, "DHT"
+                            return true, "DHT", dungeon.zoneIDs
                         end
                     else
-                        return false  -- GPS coordinates are unavailable; cannot determine the dungeon
+                        return false
                     end
                 else
-                    return true, dungeon.name
+                    return true, dungeon.name, dungeon.zoneIDs
                 end
             end
         end
@@ -51,45 +47,50 @@ local function isUserInDungeonZone(userZoneID)
     return false
 end
 
-
 local function PrintGroupMembersZoneIDsAndSummonNeeds()
     local playerZoneID = C_Map.GetBestMapForUnit("player")
-    print(playerZoneID)
+    --print(playerZoneID)
     if not playerZoneID then
         print("Your zone ID could not be determined.")
         return
     end
     
-    local inDungeon, dungeonName = isUserInDungeonZone(playerZoneID)
+    local inDungeon, dungeonName, acceptableZoneIDs = isUserInDungeonZone(playerZoneID)
     if not inDungeon then
         print("You are not in a dungeon zone, you can't help summon")
-        return  -- Exit if the user is not in any of the mentioned dungeon zones
+        return
     end
     
     print("You are in zone ID: " .. playerZoneID .. " (" .. dungeonName .. ")")
-    if IsInGroup() then
-        --print("**DEBUG** User is in a group")
-        local groupType = IsInRaid() and "raid" or "party"
-        local numMembers = IsInRaid() and GetNumGroupMembers() or GetNumSubgroupMembers()
+    if IsInGroup() and not IsInRaid() then
+        local numMembers = GetNumSubgroupMembers()
         
         for i = 1, numMembers do
-            local unitID = groupType .. (groupType == "party" and i or i - 1)
+            local unitID = "party" .. i
             local memberName = GetUnitName(unitID, false)
             local zoneID = C_Map.GetBestMapForUnit(unitID)
+            local needsSummon = true
             
-            if zoneID and zoneID ~= playerZoneID then
+            if zoneID then
+                for _, id in ipairs(acceptableZoneIDs) do
+                    if zoneID == id then
+                        needsSummon = false
+                        break
+                    end
+                end
+                
                 local zoneName = C_Map.GetMapInfo(zoneID).name
-                print(memberName .. " is in zone ID: " .. zoneID .. " (" .. zoneName .. "). ")
-                print("|cFFFF0000" .. memberName .. " needs summon.|r")
-            elseif zoneID then
-                local zoneName = C_Map.GetMapInfo(zoneID).name
-                print(memberName .. " is in zone ID: " .. zoneID .. " (" .. zoneName .. ")")
+                if needsSummon then
+                    print("|cFFFF0000" .. memberName .. " is in zone ID: " .. zoneID .. " (" .. zoneName .. ") and needs summon.|r")
+                else
+                    print(memberName .. " is in an acceptable zone: " .. zoneID .. " (" .. zoneName .. "). No summon needed.")
+                end
             else
                 print(memberName .. "'s zone ID could not be determined.")
             end
         end
     else
-        print("You are not in a group.")
+        print("You are not in a group or you are in a raid, which is not supported.")
     end
 end
 
