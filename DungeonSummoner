@@ -1,0 +1,88 @@
+print("|cff7155B3Initializing Dungeon Summoner Weakaura...|r")
+
+-- Table mapping dungeon names to their zone IDs
+local dungeons = {
+    {name = "DOTI", zoneIDs = {2025, 2190}},
+    {name = "DHT", zoneIDs = {1, 2}},
+    {name = "TOTT", zoneIDs = {204, 322}}, 
+    {name = "BRH", zoneIDs = {5, 6}}, 
+    {name = "AD", zoneIDs = {7, 8}},  
+    {name = "WM", zoneIDs = {9, 10}},  
+    {name = "EB", zoneIDs = {543, 620}}
+    -- Add more dungeons as needed
+}
+
+local function isUserInDungeonZone(userZoneID)
+    for _, dungeon in ipairs(dungeons) do
+        for _, zoneID in ipairs(dungeon.zoneIDs) do
+            if userZoneID == zoneID then
+                
+                return true, dungeon.name
+            end
+        end
+    end
+    return false
+end
+
+local function PrintGroupMembersZoneIDsAndSummonNeeds()
+    local playerZoneID = C_Map.GetBestMapForUnit("player")
+    print("**DEBUG** Player Zone ID = " .. playerZoneID)
+    if not playerZoneID then        
+        print("Your zone ID could not be determined.|r")
+        return
+    end
+    
+    local inDungeon, dungeonName = isUserInDungeonZone(playerZoneID)
+    if not inDungeon then
+        print("|cffAF7AC5You are not near a summon stone or in a dungeon, no further actions taken|r")
+        return  -- Exit if the user is not in any of the mentioned dungeon zones
+    end
+    
+    print("You are in zone ID: " .. playerZoneID .. " (" .. dungeonName .. ")")
+    
+    if IsInGroup() then
+        --print("**DEBUG** User is in a group")
+        local groupType = IsInRaid() and "raid" or "party"
+        local numMembers = IsInRaid() and GetNumGroupMembers() or GetNumSubgroupMembers()
+        
+        for i = 1, numMembers do
+            local unitID = groupType .. (groupType == "party" and i or i - 1)
+            local memberName = GetUnitName(unitID, false)
+            local zoneID = C_Map.GetBestMapForUnit(unitID)
+            
+            if zoneID and zoneID ~= playerZoneID then
+                local zoneName = C_Map.GetMapInfo(zoneID).name
+                print(memberName .. " is in zone ID: " .. zoneID .. " (" .. zoneName .. "). ")
+                print("|cFFFF0000" .. memberName .. " needs summon.|r")
+            elseif zoneID then
+                local zoneName = C_Map.GetMapInfo(zoneID).name
+                print(memberName .. " is in zone ID: " .. zoneID .. " (" .. zoneName .. ")")
+            else
+                print(memberName .. "'s zone ID could not be determined.")
+            end
+        end
+    else
+        print("You are not in a group.")
+    end
+end
+
+local function PrintPlayerGPS()
+    local uiMapID = C_Map.GetBestMapForUnit("player")
+    if not uiMapID then
+        print("Cannot determine player's map for GPS coordinates.")
+        return
+    end
+    
+    local position = C_Map.GetPlayerMapPosition(uiMapID, "player")
+    if position then
+        local x, y = position:GetXY()
+        -- Coordinates are returned as fractions, so we convert them to percentages for readability
+        print(string.format("Your GPS coordinates: %.2f, %.2f", x * 100, y * 100))
+    else
+        print("GPS coordinates unavailable for your current location.")
+    end
+end
+
+PrintPlayerGPS()
+--PrintGroupMembersZoneIDsAndSummonNeeds()
+
