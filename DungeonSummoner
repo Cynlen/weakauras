@@ -1,45 +1,70 @@
-print("|cff7155B3Initializing Dungeon Summoner Weakaura...|r")
+print("|cff7155B3Initializing summon checker...|r")
 
--- Table mapping dungeon names to their zone IDs
+-- Table mapping dungeon names to their zone IDs and additional differentiation logic if needed
 local dungeons = {
     {name = "DOTI", zoneIDs = {2025, 2190}},
-    {name = "DHT", zoneIDs = {1, 2}},
+    -- DHT and BRH share the same zoneID but will be differentiated by GPS coordinates
+    {name = "DHT_BRH", zoneIDs = {641}, differentiateByCoordinates = true},
     {name = "TOTT", zoneIDs = {204, 322}}, 
-    {name = "BRH", zoneIDs = {5, 6}}, 
-    {name = "AD", zoneIDs = {7, 8}},  
-    {name = "WM", zoneIDs = {9, 10}},  
-    {name = "EB", zoneIDs = {543, 620}}
+    {name = "AD", zoneIDs = {7, 8}}, 
+    {name = "WM", zoneIDs = {9, 10}}, 
+    {name = "EB", zoneIDs = {543, 620}} 
     -- Add more dungeons as needed
 }
 
+local function getPlayerGPS()
+    local uiMapID = C_Map.GetBestMapForUnit("player")
+    if not uiMapID then return nil end
+    
+    local position = C_Map.GetPlayerMapPosition(uiMapID, "player")
+    if position then
+        local x, y = position:GetXY()
+        return x, y
+    else
+        return nil
+    end
+end
+
 local function isUserInDungeonZone(userZoneID)
+    local x, y = getPlayerGPS()  -- Get GPS coordinates for additional logic if needed
+    
     for _, dungeon in ipairs(dungeons) do
         for _, zoneID in ipairs(dungeon.zoneIDs) do
             if userZoneID == zoneID then
-                
-                return true, dungeon.name
+                -- Additional check for dungeons that need differentiation by GPS coordinates
+                if dungeon.differentiateByCoordinates and dungeon.name == "DHT_BRH" then
+                    if x then
+                        if x < 0.50 then  -- Using 0.50 as it's the fraction representation of 50%
+                            return true, "BRH"
+                        else
+                            return true, "DHT"
+                        end
+                    else
+                        return false  -- GPS coordinates are unavailable; cannot determine the dungeon
+                    end
+                else
+                    return true, dungeon.name
+                end
             end
         end
     end
     return false
 end
 
+
 local function PrintGroupMembersZoneIDsAndSummonNeeds()
     local playerZoneID = C_Map.GetBestMapForUnit("player")
-    print("**DEBUG** Player Zone ID = " .. playerZoneID)
-    if not playerZoneID then        
-        print("Your zone ID could not be determined.|r")
+    if not playerZoneID then
+        print("Your zone ID could not be determined.")
         return
     end
     
     local inDungeon, dungeonName = isUserInDungeonZone(playerZoneID)
     if not inDungeon then
-        print("|cffAF7AC5You are not near a summon stone or in a dungeon, no further actions taken|r")
         return  -- Exit if the user is not in any of the mentioned dungeon zones
     end
     
     print("You are in zone ID: " .. playerZoneID .. " (" .. dungeonName .. ")")
-    
     if IsInGroup() then
         --print("**DEBUG** User is in a group")
         local groupType = IsInRaid() and "raid" or "party"
@@ -66,23 +91,5 @@ local function PrintGroupMembersZoneIDsAndSummonNeeds()
     end
 end
 
-local function PrintPlayerGPS()
-    local uiMapID = C_Map.GetBestMapForUnit("player")
-    if not uiMapID then
-        print("Cannot determine player's map for GPS coordinates.")
-        return
-    end
-    
-    local position = C_Map.GetPlayerMapPosition(uiMapID, "player")
-    if position then
-        local x, y = position:GetXY()
-        -- Coordinates are returned as fractions, so we convert them to percentages for readability
-        print(string.format("Your GPS coordinates: %.2f, %.2f", x * 100, y * 100))
-    else
-        print("GPS coordinates unavailable for your current location.")
-    end
-end
-
-PrintPlayerGPS()
---PrintGroupMembersZoneIDsAndSummonNeeds()
+PrintGroupMembersZoneIDsAndSummonNeeds()
 
