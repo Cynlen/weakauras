@@ -61,6 +61,7 @@ local function PrintGroupMembersZoneIDsAndSummonNeeds()
     
     local inDungeon, dungeonName = isUserInDungeonZone(playerZoneID)
     if not inDungeon then
+        print("You are not in a dungeon zone, you can't help summon")
         return  -- Exit if the user is not in any of the mentioned dungeon zones
     end
     
